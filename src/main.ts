@@ -70,13 +70,10 @@ async function ensureCustomizationDirectories(): Promise<void> {
       if (devMode) console.warn('Could not install bundled FunPay theme:', error instanceof Error ? error.message : error);
     }
   }
-  if (!String(store.get('customThemePath', ''))) {
-    try {
-      await stat(installedTheme);
-      store.set('customThemePath', installedTheme);
-    } catch {
-      // A missing optional theme should not prevent the application from starting.
-    }
+  // Keep the bundled theme available for manual selection, but start with the
+  // regular FunPay appearance instead of enabling a custom theme automatically.
+  if (String(store.get('customThemePath', '')) === installedTheme) {
+    store.set('customThemePath', '');
   }
 }
 

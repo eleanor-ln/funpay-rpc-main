@@ -1,6 +1,6 @@
 {
   "name": "funpay-rpc",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "FunPay desktop client with Discord Rich Presence",
   "author": "flouz152",
   "private": true,
