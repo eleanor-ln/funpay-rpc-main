@@ -1,6 +1,6 @@
 # FunPay RPC
 
-Десктопное приложение для FunPay с Discord Rich Presence, пользовательскими темами и Windows-уведомлениями.
+Десктопное приложение FunPay с Discord Rich Presence, пользовательскими темами и Windows-уведомлениями.
 
 English version: [README.en.md](README.en.md)
 
