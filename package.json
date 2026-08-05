@@ -1,0 +1,45 @@
+{
+  "name": "vndb-rpc",
+  "version": "1.0.0",
+  "description": "VNDB desktop client with Discord Rich Presence",
+  "private": true,
+  "license": "MIT",
+  "main": "./tsc/main.js",
+  "scripts": {
+    "dev": "tsc && npm run copy-header && electron ./tsc/main.js --dev",
+    "build": "tsc && npm run copy-header && electron-builder --dir",
+    "build-win": "tsc && npm run copy-header && electron-builder -w nsis",
+    "build-linux-appimage": "tsc && npm run copy-header && electron-builder -l appimage",
+    "build-linux-deb": "tsc && npm run copy-header && electron-builder -l deb",
+    "build-mac": "tsc && npm run copy-header && electron-builder -m dmg",
+    "copy-header": "cpx \"src/header/**/*\" tsc/header"
+  },
+  "build": {
+    "appId": "org.vndb.rpc",
+    "productName": "VNDB RPC",
+    "asar": true,
+    "files": ["tsc/**/*", "assets/newEleanorMay/all.ico", "assets/newEleanorMay/vndb.jpg", "!node_modules/electron/**/*"],
+    "directories": { "output": "build" },
+    "win": { "target": "nsis", "icon": "assets/newEleanorMay/all.ico", "artifactName": "vndb-rpc-${version}-win.${ext}" },
+    "mac": { "target": "dmg", "artifactName": "vndb-rpc-${version}-mac.${ext}" },
+    "linux": {
+      "target": ["AppImage", "deb"],
+      "category": "Network",
+      "executableName": "vndb-rpc",
+      "artifactName": "vndb-rpc-${version}-linux.${ext}",
+      "desktop": { "entry": { "Name": "VNDB RPC", "Comment": "VNDB client with Discord Rich Presence", "Categories": "Network;" } }
+    }
+  },
+  "dependencies": {
+    "@xhayper/discord-rpc": "^1.3.0",
+    "discord-api-types": "^0.38.18",
+    "electron-store": "^8.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.2.1",
+    "cpx": "^1.5.0",
+    "electron": "^41.1.1",
+    "electron-builder": "^26.7.0",
+    "typescript": "^5.9.2"
+  }
+}
