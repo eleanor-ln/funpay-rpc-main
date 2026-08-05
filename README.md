@@ -1,22 +1,16 @@
 # VNDB RPC
 
-Минималистичный Electron-клиент для [VNDB.org](https://vndb.org/) с Discord Rich Presence.
-
-Приложение показывает в Discord текущую страницу VNDB. На странице визуальной новеллы отображаются её название, обложка (если сайт отдаёт `og:image`) и кнопка перехода обратно на VNDB. На остальных страницах показывается режим просмотра каталога.
-
-## Запуск
+## Run
 
 ```text
 npm install
 npm run dev
 ```
 
-Для сборки установщика:
+Build the Windows installer:
 
 ```text
 npm run build-win
 ```
 
-В настройках (F1) находится только один переключатель — Discord Rich Presence.
-
-По умолчанию используется Discord Application ID из исходного проекта. Для собственного Discord-приложения можно задать переменную окружения `VNDB_DISCORD_CLIENT_ID` перед запуском.
+Open settings with F1.

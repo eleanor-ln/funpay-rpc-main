@@ -11,6 +11,13 @@ let canGoBack = false;
 let canGoForward = false;
 let isRefreshing = false;
 
+const glyphs = {
+    minimize: '\uE921',
+    maximize: '\uE922',
+    restore: '\uE923',
+    close: '\uE8BB',
+};
+
 function navigationState(state = {}) {
     if ('canGoBack' in state) canGoBack = state.canGoBack;
     if ('canGoForward' in state) canGoForward = state.canGoForward;
@@ -26,10 +33,15 @@ function refreshState(refreshing) {
 }
 
 function updateWindowControls() {
+    const minimizeGlyph = document.querySelector('#minimize-btn .icon-glyph');
     const button = document.getElementById('maximize-btn');
     const glyph = button?.querySelector('.icon-glyph');
-    if (!button || !glyph || platform !== 'win32') return;
-    glyph.textContent = isMaximized ? '\uE923' : '\uE922';
+    const closeGlyph = document.querySelector('#close-btn .icon-glyph');
+    if (platform !== 'win32') return;
+    if (minimizeGlyph) minimizeGlyph.textContent = glyphs.minimize;
+    if (closeGlyph) closeGlyph.textContent = glyphs.close;
+    if (!button || !glyph) return;
+    glyph.textContent = isMaximized ? glyphs.restore : glyphs.maximize;
     button.title = isMaximized ? 'Restore' : 'Maximize';
     button.setAttribute('aria-label', button.title);
 }

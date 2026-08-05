@@ -33,12 +33,12 @@ export class PresenceService {
 
   async update(page: PageInfo): Promise<void> {
     if (!this.store.get('discordRichPresence', true)) {
-      this.clear();
+      await this.clear();
       return;
     }
 
     if (!page.isVisualNovel && !this.store.get('discordShowCatalog', false)) {
-      this.clear();
+      await this.clear();
       return;
     }
 
@@ -68,15 +68,15 @@ export class PresenceService {
         activity.buttons = [{ label: 'Open VN on VNDB', url: page.url }];
       }
 
-      this.rpc.user.setActivity(activity);
+      await this.rpc.user.setActivity(activity);
     } catch (error) {
       console.warn('Could not update Discord RPC:', error instanceof Error ? error.message : error);
     }
   }
 
-  clear(): void {
+  async clear(): Promise<void> {
     try {
-      this.rpc.user?.clearActivity();
+      await this.rpc.user?.clearActivity();
     } catch (error) {
       console.warn('Could not clear Discord RPC:', error instanceof Error ? error.message : error);
     }
