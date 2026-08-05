@@ -2,6 +2,10 @@ export interface PageInfo {
   title: string;
   url: string;
   artwork: string;
-  vnId: string;
-  isVisualNovel: boolean;
+  section: string;
+  isFunPayPage: boolean;
+  isCatalogPage: boolean;
+  activityDetails: string;
+  activityState: string;
+  buttonLabel: string;
 }

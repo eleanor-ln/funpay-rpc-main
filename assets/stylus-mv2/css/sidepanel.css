@@ -1,0 +1,1 @@
+[id=stylus-sidepanel] #message-box{animation:none}[id=stylus-sidepanel] #message-box>div{flex:1;max-height:none;max-width:none;position:static}[id=stylus-sidepanel] #message-box-title{pointer-events:none;-moz-user-select:text;user-select:text}[id=stylus-sidepanel] #message-box-close-icon{display:none}

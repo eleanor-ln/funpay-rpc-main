@@ -3,20 +3,19 @@ import { ActivityType } from 'discord-api-types/v10';
 import { Client as DiscordClient, SetActivity } from '@xhayper/discord-rpc';
 import type { PageInfo } from '../types';
 
-const DEFAULT_CLIENT_ID = '1090770350251458592';
-const VNDB_ICON_URL =
-  process.env.VNDB_DISCORD_IMAGE_URL ||
-  'https://raw.githubusercontent.com/flouz152/vndb-rpc/main/assets/newEleanorMay/vndb.jpg';
+const DEFAULT_CLIENT_ID = '1410684519866044537';
+const FUNPAY_ICON_URL = process.env.FUNPAY_DISCORD_IMAGE_URL || 'https://cdn.rcd.gg/PreMiD/websites/F/FunPay/assets/logo.jpg';
 
 export class PresenceService {
   private readonly store: ElectronStore;
   private readonly rpc: DiscordClient;
+  private readonly startTimestamp = Math.floor(Date.now() / 1000);
   private connected = false;
 
   constructor(store: ElectronStore) {
     this.store = store;
     this.rpc = new DiscordClient({
-      clientId: process.env.VNDB_DISCORD_CLIENT_ID || DEFAULT_CLIENT_ID,
+      clientId: process.env.FUNPAY_DISCORD_CLIENT_ID || DEFAULT_CLIENT_ID,
     });
     void this.connect();
   }
@@ -37,7 +36,7 @@ export class PresenceService {
       return;
     }
 
-    if (!page.isVisualNovel && !this.store.get('discordShowCatalog', false)) {
+    if (!page.isFunPayPage) {
       await this.clear();
       return;
     }
@@ -46,26 +45,24 @@ export class PresenceService {
       if (!this.connected || !this.rpc.isConnected) await this.connect();
       if (!this.rpc.user) return;
 
-      const title = this.shorten(page.title || 'Visual Novel Database');
       const activity: SetActivity & { name?: string } = {
         type: ActivityType.Watching,
-        name: 'VNDB',
-        details: page.isVisualNovel ? title : 'Browsing visual novels',
-        state: page.isVisualNovel
-          ? `VNDB.org${page.vnId ? ` • ${page.vnId}` : ''}`
-          : title,
-        largeImageKey: VNDB_ICON_URL,
-        largeImageText: 'VNDB.org',
+        name: 'FunPay',
+        details: this.shorten(page.activityDetails || 'Browsing FunPay'),
+        state: this.shorten(page.activityState || page.section || 'FunPay'),
+        largeImageKey: FUNPAY_ICON_URL,
+        largeImageText: 'FunPay.com',
+        startTimestamp: this.startTimestamp,
         instance: false,
       };
 
-      if (page.isVisualNovel && page.artwork && this.store.get('discordShowArtwork', true)) {
-        activity.smallImageKey = page.artwork;
-        activity.smallImageText = title;
+      if (page.buttonLabel) {
+        activity.buttons = [{ label: this.shorten(page.buttonLabel, 32), url: page.url }];
       }
 
-      if (page.isVisualNovel && this.store.get('discordShowButton', true) && /^https:\/\/vndb\.org\/v\d+(?:[/?#]|$)/i.test(page.url)) {
-        activity.buttons = [{ label: 'Open VN on VNDB', url: page.url }];
+      if (page.artwork) {
+        activity.smallImageKey = page.artwork;
+        activity.smallImageText = this.shorten(page.title || 'FunPay');
       }
 
       await this.rpc.user.setActivity(activity);
@@ -84,10 +81,10 @@ export class PresenceService {
 
   setEnabled(enabled: boolean): void {
     this.store.set('discordRichPresence', enabled);
-    if (!enabled) this.clear();
+    if (!enabled) void this.clear();
   }
 
-  private shorten(value: string): string {
-    return value.length > 128 ? `${value.slice(0, 125)}...` : value;
+  private shorten(value: string, limit = 128): string {
+    return value.length > limit ? `${value.slice(0, limit - 3)}...` : value;
   }
 }

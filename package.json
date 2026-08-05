@@ -1,7 +1,7 @@
 {
-  "name": "vndb-rpc",
+  "name": "funpay-rpc",
   "version": "1.0.0",
-  "description": "VNDB desktop client with Discord Rich Presence",
+  "description": "FunPay desktop client with Discord Rich Presence",
   "private": true,
   "license": "MIT",
   "main": "./tsc/main.js",
@@ -15,19 +15,21 @@
     "copy-header": "cpx \"src/header/**/*\" tsc/header"
   },
   "build": {
-    "appId": "org.vndb.rpc",
-    "productName": "VNDB RPC",
+    "appId": "com.funpay.rpc",
+    "productName": "FunPay RPC",
     "asar": true,
-    "files": ["tsc/**/*", "assets/newEleanorMay/all.ico", "assets/newEleanorMay/vndb.jpg", "!node_modules/electron/**/*"],
+    "asarUnpack": ["assets/stylus-mv2/**/*"],
+    "files": ["tsc/**/*", "assets/funpay/**/*", "assets/stylus-mv2/**/*", "themes/**/*", "sounds/**/*", "!node_modules/electron/**/*"],
     "directories": { "output": "build" },
-    "win": { "target": "nsis", "icon": "assets/newEleanorMay/all.ico", "artifactName": "vndb-rpc-${version}-win.${ext}" },
-    "mac": { "target": "dmg", "artifactName": "vndb-rpc-${version}-mac.${ext}" },
+    "win": { "target": "nsis", "icon": "assets/funpay/funpay.ico", "signAndEditExecutable": false, "artifactName": "funpay-rpc-${version}-win.${ext}" },
+    "mac": { "target": "dmg", "icon": "assets/funpay/funpay.png", "artifactName": "funpay-rpc-${version}-mac.${ext}" },
     "linux": {
       "target": ["AppImage", "deb"],
       "category": "Network",
-      "executableName": "vndb-rpc",
-      "artifactName": "vndb-rpc-${version}-linux.${ext}",
-      "desktop": { "entry": { "Name": "VNDB RPC", "Comment": "VNDB client with Discord Rich Presence", "Categories": "Network;" } }
+      "executableName": "funpay-rpc",
+      "artifactName": "funpay-rpc-${version}-linux.${ext}",
+      "icon": "assets/funpay/funpay.png",
+      "desktop": { "entry": { "Name": "FunPay RPC", "Comment": "FunPay client with Discord Rich Presence", "Categories": "Network;" } }
     }
   },
   "dependencies": {
