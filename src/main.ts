@@ -26,6 +26,7 @@ const store = new Store({
 });
 
 const HEADER_HEIGHT = 32;
+const APP_USER_MODEL_ID = 'com.funpay.rpc';
 const devMode = process.argv.includes('--dev');
 const isMac = process.platform === 'darwin';
 const resourcesPath = path.join(__dirname, '../assets');
@@ -548,7 +549,15 @@ function setupWindowControls(): void {
   ipcMain.handle('get-navigation-controls-enabled', () => true);
   ipcMain.handle('is-maximized', () => Boolean(mainWindow?.isMaximized()));
   ipcMain.handle('open-developer-link', async () => { await shell.openExternal('https://funpay.com/'); return true; });
+  ipcMain.handle('open-eleanor-may-link', async () => { await shell.openExternal('https://t.me/notslep'); return true; });
   ipcMain.handle('open-stylus-manager', async () => { await openStylusManager(); return Boolean(stylusExtensionId); });
+  ipcMain.handle('test-windows-notification', () => {
+    if (process.platform !== 'win32') return { shown: false, reason: 'Windows notifications are only available on Windows.' };
+    if (!Notification.isSupported()) return { shown: false, reason: 'Windows notifications are not supported on this system.' };
+    if (!store.get('desktopNotificationsEnabled', true)) return { shown: false, reason: 'Enable Windows notifications first.' };
+    showWindowsNotification('FunPay RPC', 'Test notification: Windows notifications are working.', `test-${Date.now()}`);
+    return { shown: true };
+  });
   ipcMain.on('funpay-notification', (_event, payload: unknown) => {
     if (!payload || typeof payload !== 'object') return;
     const value = payload as { nickname?: unknown; message?: unknown; signature?: unknown };
@@ -691,6 +700,9 @@ async function createWindow(): Promise<void> {
     backgroundColor: '#18181b',
     webPreferences: { contextIsolation: true, nodeIntegration: false, devTools: devMode },
   });
+  if (process.platform === 'win32') {
+    mainWindow.setAppDetails({ appId: APP_USER_MODEL_ID, appIconPath, appIconIndex: 0 });
+  }
 
   headerView = new BrowserView({ webPreferences: { preload: path.join(__dirname, 'header', 'headerPreload.js'), contextIsolation: true, sandbox: true } });
   contentView = new BrowserView({ webPreferences: { preload: path.join(__dirname, 'content', 'contentPreload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true, devTools: devMode } });
@@ -735,7 +747,7 @@ async function createWindow(): Promise<void> {
   setupTray();
 }
 
-app.setAppUserModelId('com.funpay.rpc');
+app.setAppUserModelId(APP_USER_MODEL_ID);
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) app.exit(0);
 else {

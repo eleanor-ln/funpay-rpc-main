@@ -940,6 +940,11 @@ html {
     display: none !important;
 }
 
+.promo-cd .social-statistic-list,
+.promo-cd .social-statistic {
+    display: none !important;
+}
+
 .promo-game-list,
 .promo-game-list .promo-game-item {
     background: transparent !important;

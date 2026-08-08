@@ -2,5 +2,7 @@ node_modules/
 tsc/
 build/
 build-resources/
+dist/
+.idea/
 *.log
 .DS_Store

@@ -1,6 +1,6 @@
 {
   "name": "funpay-rpc",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "FunPay desktop client with Discord Rich Presence",
   "author": "flouz152",
   "private": true,
@@ -22,7 +22,7 @@
     "asarUnpack": ["assets/stylus-mv2/**/*"],
     "files": ["tsc/**/*", "assets/funpay/**/*", "assets/stylus-mv2/**/*", "themes/**/*", "sounds/**/*", "!node_modules/electron/**/*"],
     "directories": { "output": "build" },
-    "win": { "target": "nsis", "icon": "assets/funpay/funpay.ico", "signAndEditExecutable": false, "artifactName": "funpay-rpc-${version}-win.${ext}" },
+    "win": { "target": "nsis", "icon": "assets/funpay/funpay.ico", "signExecutable": false, "artifactName": "funpay-rpc-${version}-win.${ext}" },
     "mac": { "target": "dmg", "icon": "assets/funpay/funpay.png", "artifactName": "funpay-rpc-${version}-mac.${ext}" },
     "linux": {
       "target": ["AppImage", "deb"],
