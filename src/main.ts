@@ -20,6 +20,7 @@ const store = new Store({
     notificationSoundPath: '',
     notificationSoundEnabled: true,
     desktopNotificationsEnabled: true,
+    foxenEnabled: false,
   },
   clearInvalidConfig: true,
   encryptionKey: 'funpay-rpc-config',
@@ -27,6 +28,7 @@ const store = new Store({
 
 const HEADER_HEIGHT = 32;
 const APP_USER_MODEL_ID = 'com.funpay.rpc';
+const APP_NAME = 'FunPay';
 const devMode = process.argv.includes('--dev');
 const isMac = process.platform === 'darwin';
 const resourcesPath = path.join(__dirname, '../assets');
@@ -59,23 +61,20 @@ async function ensureCustomizationDirectories(): Promise<void> {
     mkdir(soundDirectory, { recursive: true }),
   ]);
 
-  const defaultThemeName = 'funpay.EleanorMay-theme.css';
-  const bundledTheme = path.join(__dirname, '..', 'themes', defaultThemeName);
-  const installedTheme = path.join(themeDirectory, defaultThemeName);
-  try {
-    await stat(installedTheme);
-  } catch {
+  const bundledThemeNames = ['funpay.EleanorMay-theme.css', 'newRize-theme.css'];
+  await Promise.all(bundledThemeNames.map(async (themeName) => {
+    const bundledTheme = path.join(__dirname, '..', 'themes', themeName);
+    const installedTheme = path.join(themeDirectory, themeName);
     try {
-      await copyFile(bundledTheme, installedTheme);
-    } catch (error) {
-      if (devMode) console.warn('Could not install bundled FunPay theme:', error instanceof Error ? error.message : error);
+      await stat(installedTheme);
+    } catch {
+      try {
+        await copyFile(bundledTheme, installedTheme);
+      } catch (error) {
+        if (devMode) console.warn(`Could not install bundled theme ${themeName}:`, error instanceof Error ? error.message : error);
+      }
     }
-  }
-  // Keep the bundled theme available for manual selection, but start with the
-  // regular FunPay appearance instead of enabling a custom theme automatically.
-  if (String(store.get('customThemePath', '')) === installedTheme) {
-    store.set('customThemePath', '');
-  }
+  }));
 }
 
 async function listCustomizationFiles(kind: CustomFileKind): Promise<CustomFileEntry[]> {
@@ -97,6 +96,8 @@ let settingsManager: SettingsManager;
 let tray: Tray | null = null;
 let stylusWindow: BrowserWindow | null = null;
 let stylusExtensionId = '';
+const bundledExtensionIds = new Map<string, string>();
+const bundledExtensionWindows = new Map<string, BrowserWindow>();
 let lastPage: PageInfo = {
   title: 'FunPay',
   url: 'https://funpay.com/',
@@ -132,6 +133,86 @@ async function loadStylus(): Promise<void> {
   }
 }
 
+function bundledExtensionPath(name: string): string {
+  return app.isPackaged
+    ? path.join(process.resourcesPath, 'app.asar.unpacked', 'extensions', name)
+    : path.join(process.cwd(), 'extensions', name);
+}
+
+async function loadBundledExtensions(): Promise<void> {
+  if (!store.get('foxenEnabled', false)) return;
+  const extensions = [
+    { key: 'foxen', name: 'Foxen' },
+  ];
+  for (const extension of extensions) {
+    try {
+      const loaded = await session.defaultSession.extensions.loadExtension(
+        bundledExtensionPath(extension.key),
+        { allowFileAccess: true },
+      );
+      bundledExtensionIds.set(extension.key, loaded.id);
+      console.info(`${extension.name} ${loaded.version} loaded`);
+    } catch (error) {
+      console.warn(`${extension.name} is unavailable:`, error instanceof Error ? error.message : error);
+    }
+  }
+}
+
+async function setFoxenEnabled(enabled: boolean): Promise<SettingsSnapshot> {
+  if (enabled) {
+    store.set('foxenEnabled', true);
+    if (!bundledExtensionIds.has('foxen')) await loadBundledExtensions();
+    if (!bundledExtensionIds.has('foxen')) {
+      store.set('foxenEnabled', false);
+      return getSettingsSnapshotWithFiles();
+    }
+  } else {
+    store.set('foxenEnabled', false);
+    const extensionId = bundledExtensionIds.get('foxen');
+    if (extensionId) {
+      await session.defaultSession.extensions.removeExtension(extensionId);
+      bundledExtensionIds.delete('foxen');
+    }
+  }
+
+  if (contentView && !contentView.webContents.isDestroyed()) contentView.webContents.reload();
+  return getSettingsSnapshotWithFiles();
+}
+
+async function openBundledExtensionPopup(key: string): Promise<boolean> {
+  const extensionId = bundledExtensionIds.get(key);
+  if (!extensionId) return false;
+  const existing = bundledExtensionWindows.get(key);
+  if (existing && !existing.isDestroyed()) {
+    existing.show();
+    existing.focus();
+    return true;
+  }
+
+  const title = 'Foxen';
+  const window = new BrowserWindow({
+    width: 980,
+    height: 760,
+    minWidth: 640,
+    minHeight: 520,
+    title: `${title} — ${APP_NAME}`,
+    icon: appIconPath,
+    backgroundColor: '#18181b',
+    webPreferences: { contextIsolation: true, nodeIntegration: false },
+  });
+  bundledExtensionWindows.set(key, window);
+  window.on('closed', () => bundledExtensionWindows.delete(key));
+  try {
+    await window.loadURL(`chrome-extension://${extensionId}/popup/popup.html`);
+    return true;
+  } catch (error) {
+    bundledExtensionWindows.delete(key);
+    window.close();
+    if (devMode) console.warn(`Could not open ${title} popup:`, error instanceof Error ? error.message : error);
+    return false;
+  }
+}
+
 async function openStylusManager(): Promise<void> {
   if (!stylusExtensionId) await loadStylus();
   if (!stylusExtensionId) return;
@@ -146,7 +227,7 @@ async function openStylusManager(): Promise<void> {
     height: 780,
     minWidth: 760,
     minHeight: 560,
-    title: 'Stylus — FunPay RPC',
+    title: `Stylus — ${APP_NAME}`,
     icon: appIconPath,
     backgroundColor: '#202124',
     webPreferences: { contextIsolation: true, nodeIntegration: false },
@@ -177,6 +258,7 @@ function getSettingsSnapshot(): Record<string, string | boolean> {
     notificationSoundPath: String(store.get('notificationSoundPath', '')),
     notificationSoundEnabled: Boolean(store.get('notificationSoundEnabled', true)),
     desktopNotificationsEnabled: Boolean(store.get('desktopNotificationsEnabled', true)),
+    foxenEnabled: Boolean(store.get('foxenEnabled', false)),
   };
 }
 
@@ -303,12 +385,15 @@ function audioMimeType(filePath: string): string {
   return mimeTypes[extname(filePath).toLowerCase()] || 'application/octet-stream';
 }
 
-function applyUserCustomizations(): Promise<void> {
-  customizationQueue = customizationQueue.then(() => applyUserCustomizationsNow(), () => applyUserCustomizationsNow());
+function applyUserCustomizations(reloadPage = false): Promise<void> {
+  customizationQueue = customizationQueue.then(
+    () => applyUserCustomizationsNow(reloadPage),
+    () => applyUserCustomizationsNow(reloadPage),
+  );
   return customizationQueue;
 }
 
-async function applyUserCustomizationsNow(): Promise<void> {
+async function applyUserCustomizationsNow(reloadPage: boolean): Promise<void> {
   if (!contentView || contentView.webContents.isDestroyed()) return;
 
   const themePath = String(store.get('customThemePath', ''));
@@ -383,6 +468,9 @@ async function applyUserCustomizationsNow(): Promise<void> {
   if (contentLoaded && !contentView.webContents.isLoading()) {
     await contentView.webContents.executeJavaScript(currentThemeScript).catch(() => undefined);
     await applyNotificationSound();
+  }
+  if (reloadPage && contentView && !contentView.webContents.isDestroyed()) {
+    contentView.webContents.reload();
   }
 }
 
@@ -521,7 +609,7 @@ async function selectCustomizationFile(kind: CustomFileKind, selectedPath: unkno
   try {
     if (!(await stat(candidate)).isFile()) return getSettingsSnapshotWithFiles();
     store.set(customizationKey(kind), candidate);
-    if (kind === 'theme') await applyUserCustomizations();
+    if (kind === 'theme') await applyUserCustomizations(true);
     else await applyNotificationSound();
   } catch (error) {
     if (devMode) console.warn('Could not select custom file:', error instanceof Error ? error.message : error);
@@ -551,11 +639,19 @@ function setupWindowControls(): void {
   ipcMain.handle('open-developer-link', async () => { await shell.openExternal('https://funpay.com/'); return true; });
   ipcMain.handle('open-eleanor-may-link', async () => { await shell.openExternal('https://t.me/notslep'); return true; });
   ipcMain.handle('open-stylus-manager', async () => { await openStylusManager(); return Boolean(stylusExtensionId); });
+  ipcMain.handle('open-bundled-extension', async (_event, key: unknown) => {
+    if (key !== 'foxen') return false;
+    return openBundledExtensionPopup(key);
+  });
+  ipcMain.handle('set-foxen-enabled', async (_event, enabled: unknown) => {
+    if (typeof enabled !== 'boolean') return getSettingsSnapshotWithFiles();
+    return setFoxenEnabled(enabled);
+  });
   ipcMain.handle('test-windows-notification', () => {
     if (process.platform !== 'win32') return { shown: false, reason: 'Windows notifications are only available on Windows.' };
     if (!Notification.isSupported()) return { shown: false, reason: 'Windows notifications are not supported on this system.' };
     if (!store.get('desktopNotificationsEnabled', true)) return { shown: false, reason: 'Enable Windows notifications first.' };
-    showWindowsNotification('FunPay RPC', 'Test notification: Windows notifications are working.', `test-${Date.now()}`);
+    showWindowsNotification(APP_NAME, 'Test notification: Windows notifications are working.', `test-${Date.now()}`);
     return { shown: true };
   });
   ipcMain.on('funpay-notification', (_event, payload: unknown) => {
@@ -581,7 +677,8 @@ function setupWindowControls(): void {
   ipcMain.handle('clear-custom-file', async (_event, key: unknown) => {
     if (key !== 'customThemePath' && key !== 'notificationSoundPath') return getSettingsSnapshot();
     store.set(key, '');
-    await applyUserCustomizations();
+    if (key === 'customThemePath') await applyUserCustomizations(true);
+    else await applyNotificationSound();
     return getSettingsSnapshotWithFiles();
   });
   ipcMain.on('set-rpc-setting', (_event, key: unknown, enabled: unknown) => {
@@ -599,7 +696,7 @@ function setupWindowControls(): void {
 function setupTray(): void {
   const icon = nativeImage.createFromPath(appIconPath).resize({ width: 16, height: 16 });
   tray = new Tray(icon);
-  tray.setToolTip('FunPay RPC');
+  tray.setToolTip(APP_NAME);
   tray.setContextMenu(Menu.buildFromTemplate([
     { label: 'Open FunPay', click: () => { mainWindow.show(); mainWindow.focus(); } },
     { label: 'Stylus themes', click: () => { void openStylusManager(); } },
@@ -692,7 +789,7 @@ async function createWindow(): Promise<void> {
     height: 800,
     minWidth: 700,
     minHeight: 500,
-    title: 'FunPay RPC',
+    title: APP_NAME,
     icon: appIconPath,
     frame: isMac,
     titleBarStyle: isMac ? 'hidden' : undefined,
@@ -739,20 +836,40 @@ async function createWindow(): Promise<void> {
     sendNavigationState();
     scanPage();
   });
-  contentView.webContents.on('did-finish-load', () => { contentLoaded = true; installNotificationObserver(); void applyNotificationSound(); scanPage(); });
+  contentView.webContents.on('did-finish-load', () => {
+    contentLoaded = true;
+    installNotificationObserver();
+    void applyUserCustomizations();
+    void applyNotificationSound();
+    scanPage();
+  });
   contentView.webContents.on('did-navigate', () => { sendNavigationState(); scanPage(); });
   contentView.webContents.on('did-navigate-in-page', () => { sendNavigationState(); scanPage(); });
   headerView.webContents.on('did-finish-load', () => sendNavigationState());
-  mainWindow.on('closed', () => { tray?.destroy(); tray = null; stylusWindow?.close(); stylusWindow = null; });
+  mainWindow.on('closed', () => {
+    tray?.destroy();
+    tray = null;
+    stylusWindow?.close();
+    stylusWindow = null;
+    for (const window of bundledExtensionWindows.values()) window.close();
+    bundledExtensionWindows.clear();
+  });
   setupTray();
 }
 
+app.setName(APP_NAME);
 app.setAppUserModelId(APP_USER_MODEL_ID);
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) app.exit(0);
 else {
   app.on('second-instance', () => { mainWindow?.show(); mainWindow?.focus(); });
-  app.whenReady().then(async () => { setupThemeProtocol(); await ensureCustomizationDirectories(); await loadStylus(); await createWindow(); });
+  app.whenReady().then(async () => {
+    setupThemeProtocol();
+    await ensureCustomizationDirectories();
+    await loadStylus();
+    await loadBundledExtensions();
+    await createWindow();
+  });
   app.on('window-all-closed', () => { if (!isMac) app.quit(); });
   app.on('activate', () => { if (!mainWindow) createWindow(); else mainWindow.show(); });
   app.on('before-quit', () => presenceService?.clear());

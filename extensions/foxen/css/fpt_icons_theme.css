@@ -1,0 +1,925 @@
+/* =============================================================================
+   FOXEN DESIGN SYSTEM — CYBERPUNK MINIMALISM & FROSTED GLASS
+   ============================================================================= */
+
+/* ---------- 1. Bundled Icon Font ---------- */
+@font-face {
+    font-family: 'Material Symbols Rounded';
+    font-style: normal;
+    font-weight: 400;
+    font-display: block;
+    src: url('../fonts/material-symbols-rounded.woff2') format('woff2');
+}
+
+.material-symbols-rounded,
+.material-icons {
+    font-family: 'Material Symbols Rounded';
+    font-weight: normal;
+    font-style: normal;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    font-feature-settings: 'liga';
+    -webkit-font-feature-settings: 'liga';
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    user-select: none;
+}
+
+/* Keyframe Animations */
+@keyframes fxnAuroraPulse {
+    0% { background-position: 0% 0%, 100% 100%; }
+    50% { background-position: 50% 100%, 0% 0%; }
+    100% { background-position: 0% 0%, 100% 100%; }
+}
+
+@keyframes fxnPageEnter {
+    from {
+        opacity: 0;
+        transform: translateY(6px) scale(0.99);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* ---------- 2. Floating Popup Glass Window ---------- */
+.foxen-popup {
+    background: var(--fptm-bg, #0b0c10);
+    background-image: 
+        radial-gradient(circle at 10% 0%, var(--fptm-accent-soft, rgba(192, 38, 211, 0.12)), transparent 45%),
+        radial-gradient(circle at 90% 100%, rgba(255, 255, 255, 0.03), transparent 45%);
+    background-size: 200% 200%;
+    animation: fxnAuroraPulse 18s ease infinite;
+    border: 1px solid var(--fptm-border, rgba(255, 255, 255, 0.08)) !important;
+    border-radius: 18px !important;
+    box-shadow: 
+        0 32px 80px rgba(0, 0, 0, 0.8),
+        0 0 0 1px var(--fptm-border, rgba(255, 255, 255, 0.06)),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+    color: var(--fptm-text, #e7e8ec) !important;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    overflow: hidden;
+}
+
+/* Smooth Tab Switching Animation */
+.foxen-page-content.active {
+    display: block !important;
+    animation: fxnPageEnter 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+/* ---------- 3. Header Redesign ---------- */
+.foxen-header {
+    background: var(--fptm-head, rgba(14, 15, 22, 0.85)) !important;
+    border-bottom: 1px solid var(--fptm-border, rgba(255, 255, 255, 0.07)) !important;
+    padding: 14px 22px !important;
+    position: relative;
+}
+.foxen-header::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 0; bottom: -1px;
+    height: 1px;
+    background: linear-gradient(90deg, 
+        transparent 0%, 
+        var(--fptm-accent, #C026D3) 50%, 
+        transparent 100%);
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.foxen-site-link {
+    font-size: 20px !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.02em !important;
+    color: var(--fptm-text, #ffffff) !important;
+    text-shadow: 0 0 16px var(--fptm-accent-soft, rgba(192, 38, 211, 0.35));
+    text-decoration: none !important;
+    transition: opacity 0.2s ease !important;
+}
+.foxen-site-link:hover {
+    opacity: 0.9 !important;
+}
+
+/* Compact FPT Credit Pill Badge */
+.fxn-fork-badge {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 5px !important;
+    padding: 3px 9px !important;
+    margin-left: 6px !important;
+    border-radius: 12px !important;
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.04em !important;
+    text-transform: uppercase !important;
+    background: rgba(255, 255, 255, 0.04) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    color: var(--fptm-muted, #9aa0b8) !important;
+    text-decoration: none !important;
+    transition: all 0.2s ease !important;
+    align-self: center !important;
+}
+.fxn-fork-badge:hover {
+    background: var(--fptm-accent-soft, rgba(192, 38, 211, 0.15)) !important;
+    border-color: var(--fptm-accent-border, rgba(192, 38, 211, 0.4)) !important;
+    color: var(--fptm-text, #ffffff) !important;
+    box-shadow: 0 0 10px var(--fptm-accent-soft, rgba(192, 38, 211, 0.2)) !important;
+}
+.fxn-fork-dot {
+    width: 6px !important;
+    height: 6px !important;
+    border-radius: 50% !important;
+    background: var(--fptm-accent, #C026D3) !important;
+    box-shadow: 0 0 6px var(--fptm-accent, #C026D3) !important;
+    flex-shrink: 0 !important;
+}
+
+.foxen-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Header Actions Toolbar */
+.foxen-header-actions {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin-right: auto !important;
+    padding-left: 14px !important;
+}
+
+/* Redesigned Glass Pill Accent Color Picker Button */
+.foxen-popup .fxn-accent-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    height: 32px !important;
+    padding: 0 10px !important;
+    border-radius: 10px !important;
+    background: rgba(255, 255, 255, 0.035) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    color: var(--fptm-muted, #9aa0b8) !important;
+    cursor: pointer !important;
+    position: relative !important;
+    overflow: hidden !important;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    box-shadow: none !important;
+}
+.foxen-popup .fxn-accent-btn:hover {
+    background: var(--fptm-accent-soft, rgba(192, 38, 211, 0.15)) !important;
+    border-color: var(--fptm-accent-border, rgba(192, 38, 211, 0.4)) !important;
+    color: var(--fptm-text, #ffffff) !important;
+    transform: none !important;
+    box-shadow: 0 4px 12px var(--fptm-accent-soft, rgba(192, 38, 211, 0.2)) !important;
+}
+.fxn-accent-preview-dot {
+    width: 9px !important;
+    height: 9px !important;
+    border-radius: 50% !important;
+    background: var(--fptm-accent, #C026D3) !important;
+    box-shadow: 0 0 8px var(--fptm-accent, #C026D3) !important;
+    flex-shrink: 0 !important;
+}
+.fxn-accent-input {
+    position: absolute !important;
+    inset: 0 !important;
+    opacity: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    cursor: pointer !important;
+}
+
+/* Header Social Media Buttons */
+.foxen-social {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    margin-right: auto !important;
+    padding-left: 10px !important;
+}
+.foxen-social-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 10px !important;
+    background: rgba(255, 255, 255, 0.04) !important;
+    border: none !important;
+    opacity: 0.8 !important;
+    transition: background 0.2s ease, opacity 0.2s ease, box-shadow 0.2s ease !important;
+    transform: none !important;
+}
+.foxen-social-ico {
+    width: 18px !important;
+    height: 18px !important;
+    max-width: 18px !important;
+    max-height: 18px !important;
+    object-fit: contain !important;
+    transition: filter 0.2s ease !important;
+}
+
+/* Telegram Brand Glow */
+.foxen-social-btn[data-social="telegram"]:hover,
+.foxen-social-btn[title="Telegram"]:hover {
+    background: rgba(42, 171, 238, 0.16) !important;
+    box-shadow: 0 0 14px rgba(42, 171, 238, 0.35) !important;
+    opacity: 1 !important;
+    transform: none !important;
+}
+.foxen-social-btn[data-social="telegram"]:hover .foxen-social-ico,
+.foxen-social-btn[title="Telegram"]:hover .foxen-social-ico {
+    filter: drop-shadow(0 0 5px rgba(42, 171, 238, 0.7)) !important;
+}
+
+/* Discord Brand Glow */
+.foxen-social-btn[data-social="discord"]:hover,
+.foxen-social-btn[title="Discord"]:hover {
+    background: rgba(88, 101, 242, 0.16) !important;
+    box-shadow: 0 0 14px rgba(88, 101, 242, 0.35) !important;
+    opacity: 1 !important;
+    transform: none !important;
+}
+.foxen-social-btn[data-social="discord"]:hover .foxen-social-ico,
+.foxen-social-btn[title="Discord"]:hover .foxen-social-ico {
+    filter: drop-shadow(0 0 5px rgba(88, 101, 242, 0.7)) !important;
+}
+
+/* Close Button */
+.foxen-popup .close-btn {
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 50% !important;
+    background: rgba(255, 255, 255, 0.04) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    color: var(--fptm-muted, #9aa0b8) !important;
+    font-size: 20px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+}
+.foxen-popup .close-btn:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: #ffffff !important;
+    transform: scale(1.06) !important;
+}
+
+/* ---------- 4. Sidebar Navigation Grid ---------- */
+.foxen-nav {
+    width: 230px !important;
+    padding: 16px 12px !important;
+    border-right: 1px solid var(--fptm-border, rgba(255, 255, 255, 0.07)) !important;
+    background: var(--fptm-nav, rgba(12, 13, 18, 0.95)) !important;
+}
+
+/* Search Box in Sidebar */
+.fxn-nav-search {
+    position: relative;
+    margin-bottom: 14px;
+}
+.fxn-nav-search-input {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    background: rgba(0, 0, 0, 0.25) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 10px !important;
+    padding: 9px 30px 9px 12px !important;
+    color: var(--fptm-text, #ffffff) !important;
+    font-size: 12px !important;
+    transition: all 0.2s ease !important;
+}
+.fxn-nav-search-input:focus {
+    outline: none !important;
+    border-color: var(--fptm-accent-border, rgba(192, 38, 211, 0.5)) !important;
+    box-shadow: 0 0 0 3px var(--fptm-accent-soft, rgba(192, 38, 211, 0.15)) !important;
+}
+.fxn-nav-search-clear {
+    position: absolute !important;
+    right: 10px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    background: none !important;
+    border: none !important;
+    color: var(--fptm-muted, #7a7e8f) !important;
+    font-size: 13px !important;
+    cursor: pointer !important;
+    padding: 2px !important;
+}
+.fxn-nav-search-clear:hover {
+    color: var(--fptm-text, #ffffff) !important;
+}
+
+/* Nav Grid List - Vertical List (1 per line) */
+.foxen-nav ul,
+.fxn-nav-group ul,
+.fxn-nav-vertical-list {
+    display: flex !important;
+    flex-direction: column !important;
+    grid-template-columns: none !important;
+    gap: 4px !important;
+    list-style: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+}
+
+/* Category Dividers */
+.foxen-nav li.fp-nav-divider {
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.12em !important;
+    text-transform: uppercase !important;
+    color: var(--fptm-faint, rgba(255, 255, 255, 0.4)) !important;
+    padding: 12px 4px 4px !important;
+    margin: 0 !important;
+    width: 100% !important;
+}
+
+/* Nav Row Buttons - Full Width Single Line */
+.foxen-nav li[data-page] {
+    width: 100% !important;
+    margin-bottom: 2px !important;
+}
+
+.foxen-nav li[data-page] a {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 10px !important;
+    padding: 9px 12px !important;
+    height: auto !important;
+    min-height: unset !important;
+    width: 100% !important;
+    border-radius: 10px !important;
+    background: rgba(255, 255, 255, 0.025) !important;
+    border: 1px solid rgba(255, 255, 255, 0.05) !important;
+    color: var(--fptm-muted, #9aa0b8) !important;
+    text-align: left !important;
+    box-sizing: border-box !important;
+    text-decoration: none !important;
+    position: relative !important;
+    overflow: hidden !important;
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease !important;
+}
+.foxen-nav li[data-page] a > span:last-child {
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    line-height: 1.3 !important;
+    transition: color 0.2s ease !important;
+}
+.foxen-nav .nav-icon,
+.foxen-nav .nav-list-icon {
+    font-size: 20px !important;
+    margin-bottom: 0 !important;
+    color: var(--fptm-muted, #9aa0b8) !important;
+    transition: color 0.2s ease, transform 0.2s ease, filter 0.2s ease !important;
+}
+
+/* Hover Card State */
+.foxen-nav li[data-page] a:hover {
+    background: var(--fptm-accent-soft, rgba(192, 38, 211, 0.14)) !important;
+    border-color: var(--fptm-accent-border, rgba(192, 38, 211, 0.4)) !important;
+    color: var(--fptm-text, #ffffff) !important;
+    box-shadow: 0 4px 16px var(--fptm-accent-soft, rgba(192, 38, 211, 0.2)) !important;
+    transform: none !important;
+}
+.foxen-nav li[data-page] a:hover .nav-icon,
+.foxen-nav li[data-page] a:hover .nav-list-icon {
+    color: var(--fptm-accent, #C026D3) !important;
+    transform: none !important;
+    filter: drop-shadow(0 0 8px var(--fptm-accent-soft, rgba(192, 38, 211, 0.6))) !important;
+}
+
+/* Active Card State */
+.foxen-nav li[data-page].active a {
+    background: var(--fptm-accent-soft, rgba(192, 38, 211, 0.18)) !important;
+    border-color: var(--fptm-accent-border, rgba(192, 38, 211, 0.5)) !important;
+    color: var(--fptm-text, #ffffff) !important;
+    font-weight: 600 !important;
+    box-shadow: 0 4px 16px var(--fptm-accent-soft, rgba(192, 38, 211, 0.28)) !important;
+}
+.foxen-nav li[data-page].active a .nav-icon {
+    color: var(--fptm-accent, #C026D3) !important;
+    filter: drop-shadow(0 0 10px var(--fptm-accent-soft, rgba(192, 38, 211, 0.7))) !important;
+}
+
+/* Wide Nav Item - Single Line Horizontal Row Item */
+.foxen-nav li[data-page].fxn-nav-wide {
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+}
+.foxen-nav li[data-page].fxn-nav-wide a {
+    flex-direction: row !important;
+    justify-content: flex-start !important;
+    align-items: center !important;
+    gap: 10px !important;
+    height: auto !important;
+    min-height: unset !important;
+    padding: 8px 10px 8px 14px !important;
+}
+
+/* ---------- 5. Content Area Layout ---------- */
+.foxen-content {
+    background: var(--fptm-bg, #0b0c10) !important;
+    padding: 24px 28px !important;
+}
+
+.foxen-page-content h3 {
+    font-size: 20px !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.01em !important;
+    color: var(--fptm-text, #ffffff) !important;
+    margin-top: 28px !important;
+    margin-bottom: 18px !important;
+    padding-bottom: 10px !important;
+    border-bottom: 1px solid var(--fptm-border, rgba(255, 255, 255, 0.07)) !important;
+}
+.foxen-page-content h3:first-child {
+    margin-top: 0 !important;
+}
+
+.foxen-page-content h4 {
+    font-size: 15px !important;
+    font-weight: 600 !important;
+    color: var(--fptm-text, #e7e8ec) !important;
+    margin-top: 20px !important;
+    margin-bottom: 12px !important;
+}
+
+/* ---------- 6. Cards, Groups, and Container Panels ---------- */
+.foxen-popup .setting-group,
+.foxen-popup .feature-item,
+.foxen-popup .template-container,
+.foxen-popup .fxn-smart-bump-card,
+.foxen-popup .overview-container {
+    background: rgba(255, 255, 255, 0.02) !important;
+    border: 1px solid rgba(255, 255, 255, 0.06) !important;
+    border-radius: 14px !important;
+    padding: 14px 18px !important;
+    margin-bottom: 12px !important;
+    transition: all 0.2s ease !important;
+}
+.foxen-popup .setting-group:hover,
+.foxen-popup .feature-item:hover,
+.foxen-popup .template-container:hover {
+    border-color: rgba(255, 255, 255, 0.12) !important;
+    background: rgba(255, 255, 255, 0.035) !important;
+}
+
+/* Checkbox Labels Inline Row */
+.foxen-popup .checkbox-label-inline {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    padding: 10px 14px !important;
+    background: rgba(255, 255, 255, 0.02) !important;
+    border: 1px solid rgba(255, 255, 255, 0.05) !important;
+    border-radius: 12px !important;
+    margin-bottom: 8px !important;
+    transition: all 0.2s ease !important;
+}
+.foxen-popup .checkbox-label-inline:hover {
+    background: rgba(255, 255, 255, 0.04) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* ---------- 7. Form Controls & Inputs ---------- */
+.foxen-popup input[type="text"],
+.foxen-popup input[type="number"],
+.foxen-popup input[type="password"],
+.foxen-popup textarea,
+.foxen-popup select {
+    background: rgba(0, 0, 0, 0.3) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 10px !important;
+    color: var(--fptm-text, #ffffff) !important;
+    padding: 10px 14px !important;
+    font-size: 13px !important;
+    transition: all 0.2s ease !important;
+}
+.foxen-popup input[type="text"]:focus,
+.foxen-popup input[type="number"]:focus,
+.foxen-popup input[type="password"]:focus,
+.foxen-popup textarea:focus,
+.foxen-popup select:focus {
+    outline: none !important;
+    border-color: var(--fptm-accent-border, rgba(192, 38, 211, 0.6)) !important;
+    box-shadow: 0 0 0 3px var(--fptm-accent-soft, rgba(192, 38, 211, 0.18)) !important;
+    background: rgba(0, 0, 0, 0.45) !important;
+}
+
+/* Range Sliders */
+.foxen-popup input[type="range"] {
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    height: 6px !important;
+    border-radius: 3px !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+    outline: none !important;
+    padding: 0 !important;
+}
+.foxen-popup input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    width: 18px !important;
+    height: 18px !important;
+    border-radius: 50% !important;
+    background: var(--fptm-accent, #C026D3) !important;
+    cursor: pointer !important;
+    box-shadow: 0 0 10px var(--fptm-accent-soft, rgba(192, 38, 211, 0.5)) !important;
+    transition: transform 0.15s ease !important;
+}
+.foxen-popup input[type="range"]::-webkit-slider-thumb:hover {
+    transform: scale(1.2) !important;
+}
+
+/* Custom Neumorphic Toggle Switch */
+.foxen-popup .switch,
+.foxen-popup .foxen-chat-toggle {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+}
+.foxen-popup .switch input,
+.foxen-popup .foxen-chat-toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+.foxen-popup .slider,
+.foxen-popup .foxen-chat-toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 24px;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.foxen-popup .slider::before,
+.foxen-popup .foxen-chat-toggle-slider::before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 2px;
+    bottom: 2px;
+    background: #ffffff;
+    border-radius: 50%;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+.foxen-popup input:checked + .slider,
+.foxen-popup input:checked + .foxen-chat-toggle-slider {
+    background: var(--fptm-accent, #C026D3) !important;
+    border-color: var(--fptm-accent, #C026D3) !important;
+    box-shadow: 0 0 12px var(--fptm-accent-soft, rgba(192, 38, 211, 0.4)) !important;
+}
+.foxen-popup input:checked + .slider::before,
+.foxen-popup input:checked + .foxen-chat-toggle-slider::before {
+    transform: translateX(20px);
+    background: var(--fptm-on-accent, #ffffff);
+}
+
+/* Checkboxes Minimal Redesign */
+.foxen-popup input[type="checkbox"] {
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    width: 18px !important;
+    height: 18px !important;
+    border-radius: 6px !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1.5px solid rgba(255, 255, 255, 0.2) !important;
+    cursor: pointer !important;
+    position: relative !important;
+    transition: all 0.18s ease !important;
+    flex-shrink: 0 !important;
+}
+.foxen-popup input[type="checkbox"]:hover {
+    border-color: var(--fptm-accent, #C026D3) !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+}
+.foxen-popup input[type="checkbox"]:checked {
+    background: var(--fptm-accent, #C026D3) !important;
+    border-color: var(--fptm-accent, #C026D3) !important;
+    box-shadow: 0 0 10px var(--fptm-accent-soft, rgba(192, 38, 211, 0.4)) !important;
+}
+.foxen-popup input[type="checkbox"]::after {
+    content: '' !important;
+    position: absolute !important;
+    top: 45% !important;
+    left: 50% !important;
+    width: 4px !important;
+    height: 8px !important;
+    border: solid var(--fptm-on-accent, #ffffff) !important;
+    border-width: 0 2px 2px 0 !important;
+    transform: translate(-50%, -55%) rotate(45deg) !important;
+    opacity: 0 !important;
+    transition: opacity 0.12s ease !important;
+}
+.foxen-popup input[type="checkbox"]:checked::after {
+    opacity: 1 !important;
+}
+
+/* ---------- 8. Buttons ---------- */
+.foxen-popup .btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    padding: 9px 18px !important;
+    border-radius: 10px !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    background: var(--fptm-accent, #C026D3) !important;
+    color: var(--fptm-on-accent, #ffffff) !important;
+    border: none !important;
+    cursor: pointer !important;
+    box-shadow: 0 4px 14px var(--fptm-accent-soft, rgba(192, 38, 211, 0.3)) !important;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+.foxen-popup .btn:hover {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 6px 20px var(--fptm-accent-soft, rgba(192, 38, 211, 0.45)) !important;
+    opacity: 0.95 !important;
+}
+
+.foxen-popup .btn-default {
+    background: rgba(255, 255, 255, 0.05) !important;
+    color: var(--fptm-text, #ffffff) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    box-shadow: none !important;
+}
+.foxen-popup .btn-default:hover {
+    background: rgba(255, 255, 255, 0.09) !important;
+    border-color: rgba(255, 255, 255, 0.18) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* ---------- 9. Variable Badges & Code Chips ---------- */
+.foxen-popup .variable-code,
+.foxen-popup .variables-list code,
+.foxen-popup .template-info code {
+    background: var(--fptm-accent-soft, rgba(192, 38, 211, 0.15)) !important;
+    border: 1px solid var(--fptm-accent-border, rgba(192, 38, 211, 0.35)) !important;
+    color: var(--fptm-accent, #E9A8FF) !important;
+    border-radius: 6px !important;
+    padding: 2px 7px !important;
+    font-family: 'Fira Code', monospace !important;
+    font-size: 11.5px !important;
+    font-weight: 500 !important;
+}
+
+.foxen-popup .fxn-badge,
+.foxen-popup .badge {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    padding: 3px 10px !important;
+    border-radius: 20px !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.03em !important;
+    text-transform: uppercase !important;
+    background: var(--fptm-accent-soft, rgba(192, 38, 211, 0.15)) !important;
+    border: 1px solid var(--fptm-accent-border, rgba(192, 38, 211, 0.35)) !important;
+    color: var(--fptm-accent, #E9A8FF) !important;
+}
+
+/* ---------- 10. Smooth Custom Scrollbars ---------- */
+.foxen-nav::-webkit-scrollbar,
+.foxen-content::-webkit-scrollbar {
+    width: 5px !important;
+}
+.foxen-nav::-webkit-scrollbar-track,
+.foxen-content::-webkit-scrollbar-track {
+    background: transparent !important;
+}
+.foxen-nav::-webkit-scrollbar-thumb,
+.foxen-content::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.12) !important;
+    border-radius: 4px !important;
+}
+.foxen-nav::-webkit-scrollbar-thumb:hover,
+.foxen-content::-webkit-scrollbar-thumb:hover {
+    background: var(--fptm-accent-border, rgba(192, 38, 211, 0.5)) !important;
+}
+
+/* ---------- 11. "Что тебе нужно" (Needs Tab) Custom System ---------- */
+.foxen-popup .fxn-needs-group-title {
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.08em !important;
+    color: var(--fptm-muted, #7a7e8f) !important;
+    margin: 16px 0 8px 0 !important;
+    padding-bottom: 4px !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+
+.foxen-popup .fxn-needs-item {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 12px !important;
+    background: rgba(255, 255, 255, 0.02) !important;
+    border: 1px solid rgba(255, 255, 255, 0.06) !important;
+    border-radius: 12px !important;
+    padding: 12px 14px !important;
+    margin-bottom: 8px !important;
+    transition: all 0.2s ease !important;
+}
+.foxen-popup .fxn-needs-item:hover {
+    background: rgba(255, 255, 255, 0.035) !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+.foxen-popup .fxn-needs-check {
+    display: flex !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+    flex: 1 1 auto !important;
+    cursor: pointer !important;
+    margin: 0 !important;
+}
+
+.foxen-popup .fxn-needs-item-text {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 3px !important;
+}
+
+.foxen-popup .fxn-needs-item-label {
+    font-size: 13.5px !important;
+    font-weight: 600 !important;
+    color: var(--fptm-text, #ffffff) !important;
+    line-height: 1.35 !important;
+}
+
+.foxen-popup .fxn-needs-item-desc {
+    font-size: 11.5px !important;
+    color: var(--fptm-muted, #8a8a96) !important;
+    line-height: 1.4 !important;
+}
+
+.foxen-popup .fxn-needs-preview-btn {
+    flex: 0 0 auto !important;
+    background: rgba(255, 255, 255, 0.04) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    color: var(--fptm-muted, #9aa0b8) !important;
+    width: 32px !important;
+    height: 32px !important;
+    min-width: 32px !important;
+    padding: 0 !important;
+    border-radius: 8px !important;
+    cursor: pointer !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-shadow: none !important;
+    transition: all 0.2s ease !important;
+}
+.foxen-popup .fxn-needs-preview-btn:hover {
+    color: var(--fptm-text, #ffffff) !important;
+    background: var(--fptm-accent-soft, rgba(192, 38, 211, 0.15)) !important;
+    border-color: var(--fptm-accent-border, rgba(192, 38, 211, 0.4)) !important;
+    transform: translateY(-1px) !important;
+}
+.foxen-popup .fxn-needs-preview-btn .material-symbols-rounded {
+    font-size: 18px !important;
+}
+.foxen-popup .fxn-needs-preview-btn.fxn-needs-preview-open {
+    color: var(--fptm-accent, #C026D3) !important;
+    border-color: var(--fptm-accent-border, rgba(192, 38, 211, 0.5)) !important;
+    background: var(--fptm-accent-soft, rgba(192, 38, 211, 0.2)) !important;
+}
+
+.foxen-popup .fxn-needs-preview-row {
+    display: flex !important;
+    align-items: center !important;
+    gap: 14px !important;
+    margin: -2px 0 8px 0 !important;
+    padding: 12px 14px !important;
+    background: rgba(0, 0, 0, 0.3) !important;
+    border: 1px dashed var(--fptm-accent-border, rgba(192, 38, 211, 0.35)) !important;
+    border-radius: 10px !important;
+    animation: fxnPvIn 0.16s ease-out !important;
+}
+@keyframes fxnPvIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.foxen-popup .fxn-needs-preview-caption {
+    font-size: 11px !important;
+    color: var(--fptm-muted, #7a7e8f) !important;
+    flex: 0 0 auto !important;
+}
+
+.foxen-popup .fxn-pv-stage {
+    flex: 1 1 auto !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-height: 52px !important;
+    padding: 10px !important;
+    background: rgba(255, 255, 255, 0.02) !important;
+    border-radius: 8px !important;
+    border: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+.foxen-popup .fxn-pv-none {
+    color: var(--fptm-muted, #7a7e8f) !important;
+    font-size: 12px !important;
+}
+
+.foxen-popup .fxn-needs-footer {
+    display: flex !important;
+    align-items: center !important;
+    gap: 14px !important;
+    margin-top: 12px !important;
+}
+.foxen-popup .fxn-needs-status {
+    font-size: 12px !important;
+    color: var(--fptm-muted, #8a8a96) !important;
+}
+.foxen-popup .fxn-needs-autosave-note {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 5px !important;
+    font-size: 11.5px !important;
+    color: var(--fptm-muted, #7a7e8f) !important;
+}
+.foxen-popup .fxn-needs-autosave-note .material-symbols-rounded {
+    font-size: 14px !important;
+    color: var(--fptm-accent, #C026D3) !important;
+}
+
+.foxen-popup .fxn-needs-locked { opacity: 0.85 !important; }
+.foxen-popup .fxn-needs-lock {
+    width: 19px !important; height: 19px !important; flex: 0 0 19px !important;
+    display: inline-flex !important; align-items: center !important; justify-content: center !important;
+    border: 1.5px solid rgba(255, 255, 255, 0.15) !important; border-radius: 5px !important;
+    color: var(--fptm-muted, #7a7e8f) !important;
+    margin-top: 1px !important;
+}
+.foxen-popup .fxn-needs-lock .material-symbols-rounded { font-size: 13px !important; }
+
+/* ---------- 12. Full-Page Particle Preset Grid ---------- */
+.fxn-particle-presets-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 8px !important;
+    margin-top: 6px !important;
+}
+
+.fxn-particle-preset-card {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 4px !important;
+    height: 64px !important;
+    border-radius: 12px !important;
+    background: rgba(255, 255, 255, 0.025) !important;
+    border: 1px solid rgba(255, 255, 255, 0.06) !important;
+    color: var(--fptm-muted, #9aa0b8) !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+}
+
+.fxn-particle-preset-card:hover {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border-color: rgba(255, 255, 255, 0.14) !important;
+    color: var(--fptm-text, #ffffff) !important;
+}
+
+.fxn-particle-preset-card.active {
+    background: var(--fptm-accent-soft, rgba(192, 38, 211, 0.16)) !important;
+    border-color: var(--fptm-accent-border, rgba(192, 38, 211, 0.45)) !important;
+    color: var(--fptm-text, #ffffff) !important;
+    box-shadow: 0 4px 14px var(--fptm-accent-soft, rgba(192, 38, 211, 0.25)) !important;
+}
+
+.fxn-pp-emoji {
+    font-size: 20px !important;
+    line-height: 1 !important;
+}
+
+.fxn-pp-title {
+    font-size: 11px !important;
+    font-weight: 600 !important;
+}
