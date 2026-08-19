@@ -13,6 +13,10 @@ protocol.registerSchemesAsPrivileged([{
 }]);
 
 const Store = require('electron-store');
+const APP_NAME = 'FunPay';
+const FOXEN_DEFAULT_ENABLED = false;
+const BUNDLED_THEME_MARKER = 'funpay-rpc-theme-base: 171080-glass-v4';
+
 const store = new Store({
   defaults: {
     discordRichPresence: true,
@@ -20,19 +24,19 @@ const store = new Store({
     notificationSoundPath: '',
     notificationSoundEnabled: true,
     desktopNotificationsEnabled: true,
-    foxenEnabled: false,
+    foxenEnabled: FOXEN_DEFAULT_ENABLED,
   },
   clearInvalidConfig: true,
   encryptionKey: 'funpay-rpc-config',
 });
 
 const HEADER_HEIGHT = 32;
-const APP_USER_MODEL_ID = 'com.funpay.rpc';
-const APP_NAME = 'FunPay';
 const devMode = process.argv.includes('--dev');
 const isMac = process.platform === 'darwin';
 const resourcesPath = path.join(__dirname, '../assets');
-const appIconPath = path.join(resourcesPath, 'funpay', process.platform === 'win32' ? 'funpay.ico' : 'funpay.png');
+const appIconPath = app.isPackaged
+  ? path.join(process.resourcesPath, 'app.asar.unpacked', 'assets', 'funpay', process.platform === 'win32' ? 'funpay.ico' : 'funpay.png')
+  : path.join(resourcesPath, 'funpay', process.platform === 'win32' ? 'funpay.ico' : 'funpay.png');
 
 type CustomFileKind = 'theme' | 'sound';
 type CustomFileEntry = { name: string; path: string };
@@ -66,12 +70,33 @@ async function ensureCustomizationDirectories(): Promise<void> {
     const bundledTheme = path.join(__dirname, '..', 'themes', themeName);
     const installedTheme = path.join(themeDirectory, themeName);
     try {
-      await stat(installedTheme);
+      const installedCss = await readFile(installedTheme, 'utf8');
+      if (installedCss.includes(BUNDLED_THEME_MARKER)) return;
+    } catch {
+      // Install a missing bundled theme below.
+    }
+    try {
+      await copyFile(bundledTheme, installedTheme);
+    } catch (error) {
+      if (devMode) console.warn(`Could not install bundled theme ${themeName}:`, error instanceof Error ? error.message : error);
+    }
+  }));
+
+  const bundledThemeAssets = ['eleanor-wallpaper.gif', 'newrize-background.gif', 'sphere.png'];
+  const bundledAssetsDirectory = path.join(__dirname, '..', 'themes', 'assets');
+  const installedAssetsDirectory = path.join(themeDirectory, 'assets');
+  await mkdir(installedAssetsDirectory, { recursive: true });
+  await Promise.all(bundledThemeAssets.map(async (assetName) => {
+    const bundledAsset = path.join(bundledAssetsDirectory, assetName);
+    const installedAsset = path.join(installedAssetsDirectory, assetName);
+    if (path.resolve(bundledAsset) === path.resolve(installedAsset)) return;
+    try {
+      await stat(installedAsset);
     } catch {
       try {
-        await copyFile(bundledTheme, installedTheme);
+        await copyFile(bundledAsset, installedAsset);
       } catch (error) {
-        if (devMode) console.warn(`Could not install bundled theme ${themeName}:`, error instanceof Error ? error.message : error);
+        if (devMode) console.warn(`Could not install bundled theme asset ${assetName}:`, error instanceof Error ? error.message : error);
       }
     }
   }));
@@ -140,7 +165,7 @@ function bundledExtensionPath(name: string): string {
 }
 
 async function loadBundledExtensions(): Promise<void> {
-  if (!store.get('foxenEnabled', false)) return;
+  if (!store.get('foxenEnabled', FOXEN_DEFAULT_ENABLED)) return;
   const extensions = [
     { key: 'foxen', name: 'Foxen' },
   ];
@@ -258,7 +283,7 @@ function getSettingsSnapshot(): Record<string, string | boolean> {
     notificationSoundPath: String(store.get('notificationSoundPath', '')),
     notificationSoundEnabled: Boolean(store.get('notificationSoundEnabled', true)),
     desktopNotificationsEnabled: Boolean(store.get('desktopNotificationsEnabled', true)),
-    foxenEnabled: Boolean(store.get('foxenEnabled', false)),
+    foxenEnabled: Boolean(store.get('foxenEnabled', FOXEN_DEFAULT_ENABLED)),
   };
 }
 
@@ -425,22 +450,25 @@ async function applyUserCustomizationsNow(reloadPage: boolean): Promise<void> {
           const root = document.documentElement;
           if (!root) { setTimeout(install, 0); return; }
           const oldLink = document.getElementById('__funpayRpcCustomThemeLink');
-          const oldGuard = document.getElementById('__funpayRpcCustomThemeGuard');
-          oldLink?.remove();
-          oldGuard?.remove();
-          const guard = document.createElement('style');
-          guard.id = '__funpayRpcCustomThemeGuard';
-          guard.textContent = 'html { visibility: hidden !important; }';
-          root.appendChild(guard);
+          document.getElementById('__funpayRpcCustomThemeGuard')?.remove();
+          root.style.removeProperty('visibility');
           const link = document.createElement('link');
           link.id = '__funpayRpcCustomThemeLink';
           link.rel = 'stylesheet';
           link.href = '${THEME_SCHEME}://theme.css?v=${themeVersion}';
-          const reveal = () => document.getElementById('__funpayRpcCustomThemeGuard')?.remove();
-          link.addEventListener('load', reveal, { once: true });
-          link.addEventListener('error', reveal, { once: true });
+          let settled = false;
+          let timeoutId: number | undefined;
+          const finish = (loaded: boolean) => {
+            if (settled) return;
+            settled = true;
+            if (timeoutId !== undefined) clearTimeout(timeoutId);
+            if (loaded) oldLink?.remove();
+            else link.remove();
+          };
+          link.addEventListener('load', () => finish(true), { once: true });
+          link.addEventListener('error', () => finish(false), { once: true });
           root.appendChild(link);
-          setTimeout(reveal, 5000);
+          timeoutId = window.setTimeout(() => finish(false), 5000);
         };
         install();
       })()`;
@@ -455,15 +483,33 @@ async function applyUserCustomizationsNow(reloadPage: boolean): Promise<void> {
   const currentThemeScript = `(() => {
     const oldLink = document.getElementById('__funpayRpcCustomThemeLink');
     const oldGuard = document.getElementById('__funpayRpcCustomThemeGuard');
-    oldLink?.remove();
-    oldGuard?.remove();
-    if (!${hasTheme} || !/^(?:https?:\\/\\/)(?:www\\.)?funpay\\.com\\//i.test(location.href)) return;
+    const hasFunPayUrl = /^(?:https?:\\/\\/)(?:www\\.)?funpay\\.com\\//i.test(location.href);
+    if (!${hasTheme} || !hasFunPayUrl) {
+      oldLink?.remove();
+      oldGuard?.remove();
+      document.documentElement?.style.removeProperty('visibility');
+      return;
+    }
     const root = document.documentElement || document.head || document;
+    oldGuard?.remove();
+    root.style.removeProperty('visibility');
     const link = document.createElement('link');
     link.id = '__funpayRpcCustomThemeLink';
     link.rel = 'stylesheet';
     link.href = '${THEME_SCHEME}://theme.css?v=${themeVersion}';
+    let settled = false;
+    let timeoutId: number | undefined;
+    const finish = (loaded: boolean) => {
+      if (settled) return;
+      settled = true;
+      if (timeoutId !== undefined) clearTimeout(timeoutId);
+      if (loaded) oldLink?.remove();
+      else link.remove();
+    };
+    link.addEventListener('load', () => finish(true), { once: true });
+    link.addEventListener('error', () => finish(false), { once: true });
     root.appendChild(link);
+    timeoutId = window.setTimeout(() => finish(false), 5000);
   })()`;
   if (contentLoaded && !contentView.webContents.isLoading()) {
     await contentView.webContents.executeJavaScript(currentThemeScript).catch(() => undefined);
@@ -797,10 +843,6 @@ async function createWindow(): Promise<void> {
     backgroundColor: '#18181b',
     webPreferences: { contextIsolation: true, nodeIntegration: false, devTools: devMode },
   });
-  if (process.platform === 'win32') {
-    mainWindow.setAppDetails({ appId: APP_USER_MODEL_ID, appIconPath, appIconIndex: 0 });
-  }
-
   headerView = new BrowserView({ webPreferences: { preload: path.join(__dirname, 'header', 'headerPreload.js'), contextIsolation: true, sandbox: true } });
   contentView = new BrowserView({ webPreferences: { preload: path.join(__dirname, 'content', 'contentPreload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true, devTools: devMode } });
   contentLoaded = false;
@@ -857,8 +899,6 @@ async function createWindow(): Promise<void> {
   setupTray();
 }
 
-app.setName(APP_NAME);
-app.setAppUserModelId(APP_USER_MODEL_ID);
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) app.exit(0);
 else {
