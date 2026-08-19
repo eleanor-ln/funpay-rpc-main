@@ -1,6 +1,6 @@
 import { copyFile, mkdir, readFile, readdir, stat, writeFile } from 'fs/promises';
 import { app, BrowserView, BrowserWindow, ipcMain, Menu, nativeImage, Notification, protocol, session, shell, Tray, type Event, type Input } from 'electron';
-import path, { extname } from 'path';
+import path, { basename, extname } from 'path';
 import { PresenceService } from './services/presenceService';
 import { SettingsManager } from './settings/settingsManager';
 import type { PageInfo } from './types';
@@ -15,7 +15,7 @@ protocol.registerSchemesAsPrivileged([{
 const Store = require('electron-store');
 const APP_NAME = 'FunPay';
 const FOXEN_DEFAULT_ENABLED = false;
-const BUNDLED_THEME_MARKER = 'funpay-rpc-theme-base: 171080-glass-v4';
+const BUNDLED_THEME_MARKER = 'funpay-rpc-theme-base: 171080-glass-v5';
 
 const store = new Store({
   defaults: {
@@ -29,6 +29,28 @@ const store = new Store({
   clearInvalidConfig: true,
   encryptionKey: 'funpay-rpc-config',
 });
+
+function migrateLegacyThemeSelection(): void {
+  const selectedThemePath = String(store.get('customThemePath', ''));
+  if (selectedThemePath) return;
+
+  const currentUserData = path.resolve(app.getPath('userData'));
+  const legacyUserData = path.resolve(path.dirname(currentUserData), 'funpay-rpc');
+  if (legacyUserData === currentUserData) return;
+
+  try {
+    const legacyStore = new Store({
+      cwd: legacyUserData,
+      defaults: { customThemePath: '' },
+      clearInvalidConfig: true,
+      encryptionKey: 'funpay-rpc-config',
+    });
+    const legacyThemePath = String(legacyStore.get('customThemePath', ''));
+    if (legacyThemePath) store.set('customThemePath', legacyThemePath);
+  } catch (error) {
+    if (devMode) console.warn('Could not migrate the previous FunPay theme selection:', error instanceof Error ? error.message : error);
+  }
+}
 
 const HEADER_HEIGHT = 32;
 const devMode = process.argv.includes('--dev');
@@ -81,6 +103,12 @@ async function ensureCustomizationDirectories(): Promise<void> {
       if (devMode) console.warn(`Could not install bundled theme ${themeName}:`, error instanceof Error ? error.message : error);
     }
   }));
+
+  const selectedThemePath = String(store.get('customThemePath', ''));
+  const selectedThemeName = basename(selectedThemePath);
+  if (bundledThemeNames.includes(selectedThemeName)) {
+    store.set('customThemePath', path.join(themeDirectory, selectedThemeName));
+  }
 
   const bundledThemeAssets = ['eleanor-wallpaper.gif', 'newrize-background.gif', 'sphere.png'];
   const bundledAssetsDirectory = path.join(__dirname, '..', 'themes', 'assets');
@@ -905,6 +933,7 @@ else {
   app.on('second-instance', () => { mainWindow?.show(); mainWindow?.focus(); });
   app.whenReady().then(async () => {
     setupThemeProtocol();
+    migrateLegacyThemeSelection();
     await ensureCustomizationDirectories();
     await loadStylus();
     await loadBundledExtensions();
