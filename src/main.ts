@@ -1,4 +1,5 @@
-import { copyFile, mkdir, readFile, readdir, stat, writeFile } from 'fs/promises';
+import { existsSync } from 'fs';
+import { copyFile, mkdir, readFile, readdir, stat } from 'fs/promises';
 import { app, BrowserView, BrowserWindow, ipcMain, Menu, nativeImage, Notification, protocol, session, shell, Tray, type Event, type Input } from 'electron';
 import path, { basename, extname } from 'path';
 import { PresenceService } from './services/presenceService';
@@ -91,6 +92,7 @@ async function ensureCustomizationDirectories(): Promise<void> {
   await Promise.all(bundledThemeNames.map(async (themeName) => {
     const bundledTheme = path.join(__dirname, '..', 'themes', themeName);
     const installedTheme = path.join(themeDirectory, themeName);
+    if (path.resolve(bundledTheme) === path.resolve(installedTheme)) return;
     try {
       const installedCss = await readFile(installedTheme, 'utf8');
       if (installedCss.includes(BUNDLED_THEME_MARKER)) return;
@@ -166,7 +168,6 @@ let scanTimer: NodeJS.Timeout | undefined;
 let themePreloadId: string | undefined;
 let ipcConfigured = false;
 let customizationQueue: Promise<void> = Promise.resolve();
-let contentLoaded = false;
 let themeVersion = 0;
 const shownNotificationSignatures = new Map<string, number>();
 
@@ -329,6 +330,7 @@ async function getSettingsSnapshotWithFiles(): Promise<SettingsSnapshot> {
   };
 }
 
+
 function flattenUserstyleDocuments(css: string): string {
   let result = '';
   let cursor = 0;
@@ -371,6 +373,42 @@ function flattenUserstyleDocuments(css: string): string {
   }
 }
 
+async function loadAndPrepareThemeCss(themePath: string): Promise<string> {
+  if (!themePath) return '';
+  try {
+    const rawCss = await readFile(themePath, 'utf8');
+    let css = flattenUserstyleDocuments(rawCss);
+    const themeDir = path.resolve(path.dirname(themePath));
+
+    css = css.replace(/url\(\s*(['"]?)(?!data:|https?:|\/\/|funpay-theme:)([^'")]+)\1\s*\)/gi, (match, _quote, relUrl) => {
+      try {
+        const cleanPath = relUrl.split('?')[0].split('#')[0];
+        const assetPath = path.resolve(themeDir, cleanPath);
+        if (assetPath.startsWith(themeDir) && existsSync(assetPath)) {
+          const ext = extname(assetPath).toLowerCase();
+          const mimeTypes: Record<string, string> = {
+            '.jpg': 'image/jpeg',
+            '.jpeg': 'image/jpeg',
+            '.png': 'image/png',
+            '.gif': 'image/gif',
+            '.webp': 'image/webp',
+            '.svg': 'image/svg+xml',
+          };
+          const mime = mimeTypes[ext] || 'application/octet-stream';
+          const fileData = require('fs').readFileSync(assetPath);
+          return `url("data:${mime};base64,${fileData.toString('base64')}")`;
+        }
+      } catch {}
+      return match;
+    });
+
+    return css;
+  } catch (error) {
+    if (devMode) console.warn('Could not prepare theme CSS:', error);
+    return '';
+  }
+}
+
 function setupThemeProtocol(): void {
   protocol.handle(THEME_SCHEME, async (request) => {
     const themePath = String(store.get('customThemePath', ''));
@@ -383,11 +421,12 @@ function setupThemeProtocol(): void {
 
       // The stylesheet itself is loaded as funpay-theme://theme.css.
       if (themeHost === 'theme.css' && !requestPath) {
-        const css = flattenUserstyleDocuments(await readFile(themePath, 'utf8'));
+        const css = await loadAndPrepareThemeCss(themePath);
         return new Response(css, {
           headers: {
             'content-type': 'text/css; charset=utf-8',
             'cache-control': 'no-store',
+            'access-control-allow-origin': '*',
           },
         });
       }
@@ -416,6 +455,7 @@ function setupThemeProtocol(): void {
         headers: {
           'content-type': mimeTypes[extname(assetPath).toLowerCase()] || 'application/octet-stream',
           'cache-control': 'no-store',
+          'access-control-allow-origin': '*',
         },
       });
     } catch (error) {
@@ -438,6 +478,25 @@ function audioMimeType(filePath: string): string {
   return mimeTypes[extname(filePath).toLowerCase()] || 'application/octet-stream';
 }
 
+let cachedThemeCss = '';
+let currentCssKey: string | undefined;
+
+async function updateCachedThemeCss(): Promise<string> {
+  const themePath = String(store.get('customThemePath', ''));
+  if (themePath) {
+    try {
+      if ((await stat(themePath)).isFile()) {
+        cachedThemeCss = await loadAndPrepareThemeCss(themePath);
+        return cachedThemeCss;
+      }
+    } catch (error) {
+      if (devMode) console.warn('Could not read custom FunPay CSS:', error instanceof Error ? error.message : error);
+    }
+  }
+  cachedThemeCss = '';
+  return '';
+}
+
 function applyUserCustomizations(reloadPage = false): Promise<void> {
   customizationQueue = customizationQueue.then(
     () => applyUserCustomizationsNow(reloadPage),
@@ -449,100 +508,60 @@ function applyUserCustomizations(reloadPage = false): Promise<void> {
 async function applyUserCustomizationsNow(reloadPage: boolean): Promise<void> {
   if (!contentView || contentView.webContents.isDestroyed()) return;
 
-  const themePath = String(store.get('customThemePath', ''));
-  let hasTheme = false;
-  if (themePath) {
-    try {
-      hasTheme = (await stat(themePath)).isFile();
-    } catch (error) {
-      if (devMode) console.warn('Could not read custom FunPay CSS:', error instanceof Error ? error.message : error);
-    }
-  }
-
+  const themeCss = await updateCachedThemeCss();
   themeVersion += 1;
 
   if (themePreloadId) {
     try {
       session.defaultSession.unregisterPreloadScript(themePreloadId);
-    } catch (error) {
-      if (devMode) console.warn('Could not unregister previous custom FunPay CSS:', error instanceof Error ? error.message : error);
-    }
+    } catch {}
     themePreloadId = undefined;
   }
-  if (hasTheme) {
+
+  if (currentCssKey) {
     try {
-      const themeScript = `(() => {
-        if (!/^(?:https?:\\/\\/)(?:www\\.)?funpay\\.com\\//i.test(location.href)) return;
-        if (window.top !== window) return;
-        const install = () => {
-          const root = document.documentElement;
-          if (!root) { setTimeout(install, 0); return; }
-          const oldLink = document.getElementById('__funpayRpcCustomThemeLink');
-          document.getElementById('__funpayRpcCustomThemeGuard')?.remove();
-          root.style.removeProperty('visibility');
-          const link = document.createElement('link');
-          link.id = '__funpayRpcCustomThemeLink';
-          link.rel = 'stylesheet';
-          link.href = '${THEME_SCHEME}://theme.css?v=${themeVersion}';
-          let settled = false;
-          let timeoutId: number | undefined;
-          const finish = (loaded: boolean) => {
-            if (settled) return;
-            settled = true;
-            if (timeoutId !== undefined) clearTimeout(timeoutId);
-            if (loaded) oldLink?.remove();
-            else link.remove();
-          };
-          link.addEventListener('load', () => finish(true), { once: true });
-          link.addEventListener('error', () => finish(false), { once: true });
-          root.appendChild(link);
-          timeoutId = window.setTimeout(() => finish(false), 5000);
-        };
-        install();
-      })()`;
-      const preloadPath = path.join(app.getPath('userData'), 'funpay-rpc-theme-preload.js');
-      await writeFile(preloadPath, themeScript, 'utf8');
-      themePreloadId = session.defaultSession.registerPreloadScript({ filePath: preloadPath, type: 'frame' });
+      await contentView.webContents.removeInsertedCSS(currentCssKey);
+    } catch {}
+    currentCssKey = undefined;
+  }
+
+  if (themeCss) {
+    try {
+      currentCssKey = await contentView.webContents.insertCSS(themeCss, { cssOrigin: 'user' });
     } catch (error) {
-      if (devMode) console.warn('Could not register custom FunPay CSS:', error instanceof Error ? error.message : error);
+      if (devMode) console.warn('Could not insert CSS:', error instanceof Error ? error.message : error);
     }
   }
 
+  try {
+    contentView.webContents.send('theme-changed', themeCss);
+  } catch {}
+
   const currentThemeScript = `(() => {
-    const oldLink = document.getElementById('__funpayRpcCustomThemeLink');
-    const oldGuard = document.getElementById('__funpayRpcCustomThemeGuard');
-    const hasFunPayUrl = /^(?:https?:\\/\\/)(?:www\\.)?funpay\\.com\\//i.test(location.href);
-    if (!${hasTheme} || !hasFunPayUrl) {
-      oldLink?.remove();
-      oldGuard?.remove();
-      document.documentElement?.style.removeProperty('visibility');
+    const isFunPay = /^(?:https?:\\/\\/)?(?:www\\.)?funpay\\.com/i.test(location.href);
+    const existingStyle = document.getElementById('__funpayRpcCustomTheme');
+    document.getElementById('__funpayRpcCustomThemeLink')?.remove();
+    document.getElementById('__funpayRpcCustomThemeGuard')?.remove();
+    document.documentElement?.style.removeProperty('visibility');
+
+    if (!${Boolean(themeCss)} || !isFunPay) {
+      existingStyle?.remove();
       return;
     }
-    const root = document.documentElement || document.head || document;
-    oldGuard?.remove();
-    root.style.removeProperty('visibility');
-    const link = document.createElement('link');
-    link.id = '__funpayRpcCustomThemeLink';
-    link.rel = 'stylesheet';
-    link.href = '${THEME_SCHEME}://theme.css?v=${themeVersion}';
-    let settled = false;
-    let timeoutId: number | undefined;
-    const finish = (loaded: boolean) => {
-      if (settled) return;
-      settled = true;
-      if (timeoutId !== undefined) clearTimeout(timeoutId);
-      if (loaded) oldLink?.remove();
-      else link.remove();
-    };
-    link.addEventListener('load', () => finish(true), { once: true });
-    link.addEventListener('error', () => finish(false), { once: true });
-    root.appendChild(link);
-    timeoutId = window.setTimeout(() => finish(false), 5000);
+
+    const cssText = ${JSON.stringify(themeCss)};
+    let style = existingStyle;
+    if (!style) {
+      style = document.createElement('style');
+      style.id = '__funpayRpcCustomTheme';
+      (document.head || document.documentElement || document).appendChild(style);
+    }
+    style.textContent = cssText;
   })()`;
-  if (contentLoaded && !contentView.webContents.isLoading()) {
-    await contentView.webContents.executeJavaScript(currentThemeScript).catch(() => undefined);
-    await applyNotificationSound();
-  }
+
+  await contentView.webContents.executeJavaScript(currentThemeScript).catch(() => undefined);
+  await applyNotificationSound();
+
   if (reloadPage && contentView && !contentView.webContents.isDestroyed()) {
     contentView.webContents.reload();
   }
@@ -708,6 +727,7 @@ function setupWindowControls(): void {
   ipcMain.on('navigate-forward', () => contentView?.webContents.navigationHistory.goForward());
   ipcMain.on('refresh-page', () => contentView?.webContents.reload());
   ipcMain.on('cancel-refresh', () => contentView?.webContents.stop());
+  ipcMain.on('get-theme-css-sync', (event) => { event.returnValue = cachedThemeCss; });
   ipcMain.handle('get-navigation-controls-enabled', () => true);
   ipcMain.handle('is-maximized', () => Boolean(mainWindow?.isMaximized()));
   ipcMain.handle('open-developer-link', async () => { await shell.openExternal('https://funpay.com/'); return true; });
@@ -873,19 +893,16 @@ async function createWindow(): Promise<void> {
   });
   headerView = new BrowserView({ webPreferences: { preload: path.join(__dirname, 'header', 'headerPreload.js'), contextIsolation: true, sandbox: true } });
   contentView = new BrowserView({ webPreferences: { preload: path.join(__dirname, 'content', 'contentPreload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true, devTools: devMode } });
-  contentLoaded = false;
   mainWindow.addBrowserView(headerView);
   mainWindow.addBrowserView(contentView);
   bounds();
-  headerView.webContents.loadFile(path.join(__dirname, 'header', 'header.html'));
-  await applyUserCustomizations().catch((error) => {
-    if (devMode) console.warn('Could not prepare custom FunPay CSS:', error instanceof Error ? error.message : error);
-  });
-  contentView.webContents.loadURL('https://funpay.com/');
 
   presenceService = new PresenceService(store);
   settingsManager = new SettingsManager(mainWindow);
   setupWindowControls();
+
+  headerView.webContents.loadFile(path.join(__dirname, 'header', 'header.html'));
+  contentView.webContents.loadURL('https://funpay.com/');
 
   const openSettingsOnF1 = (event: Event, input: Input) => {
     if (input.type === 'keyDown' && input.key === 'F1') {
@@ -898,7 +915,6 @@ async function createWindow(): Promise<void> {
 
   mainWindow.on('resize', bounds);
   contentView.webContents.on('did-start-loading', () => {
-    contentLoaded = false;
     headerView.webContents.send('refresh-state-changed', true);
   });
   contentView.webContents.on('did-stop-loading', () => {
@@ -907,14 +923,18 @@ async function createWindow(): Promise<void> {
     scanPage();
   });
   contentView.webContents.on('did-finish-load', () => {
-    contentLoaded = true;
     installNotificationObserver();
-    void applyUserCustomizations();
     void applyNotificationSound();
     scanPage();
   });
-  contentView.webContents.on('did-navigate', () => { sendNavigationState(); scanPage(); });
-  contentView.webContents.on('did-navigate-in-page', () => { sendNavigationState(); scanPage(); });
+  contentView.webContents.on('did-navigate', () => {
+    sendNavigationState();
+    scanPage();
+  });
+  contentView.webContents.on('did-navigate-in-page', () => {
+    sendNavigationState();
+    scanPage();
+  });
   headerView.webContents.on('did-finish-load', () => sendNavigationState());
   mainWindow.on('closed', () => {
     tray?.destroy();
@@ -932,9 +952,16 @@ if (!gotLock) app.exit(0);
 else {
   app.on('second-instance', () => { mainWindow?.show(); mainWindow?.focus(); });
   app.whenReady().then(async () => {
+    try {
+      const defaultUA = session.defaultSession.getUserAgent();
+      const cleanUA = defaultUA.replace(/Electron\/[0-9.]+\s*/g, '').replace(/FunPay\/[0-9.]+\s*/g, '');
+      session.defaultSession.setUserAgent(cleanUA);
+    } catch {}
+
     setupThemeProtocol();
     migrateLegacyThemeSelection();
     await ensureCustomizationDirectories();
+    await updateCachedThemeCss();
     await loadStylus();
     await loadBundledExtensions();
     await createWindow();

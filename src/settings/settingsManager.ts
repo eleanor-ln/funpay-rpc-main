@@ -81,8 +81,8 @@ export class SettingsManager {
       api.getSettings().then(updateSettings);
       ids.forEach(id => document.getElementById(id).addEventListener('change', event => api.setSetting(id, event.target.checked)));
       document.getElementById('foxenEnabled').addEventListener('change', async event => { const input = event.currentTarget; input.disabled = true; try { updateSettings(await api.setFoxenEnabled(input.checked)); } finally { input.disabled = false; } });
-      document.getElementById('themeSelect').addEventListener('change', event => { if (event.target.value) api.selectCustomFile('theme', event.target.value).then(updateSettings); });
-      document.getElementById('soundSelect').addEventListener('change', event => { if (event.target.value) api.selectCustomFile('sound', event.target.value).then(updateSettings); });
+      document.getElementById('themeSelect').addEventListener('change', event => { if (event.target.value) api.selectCustomFile('theme', event.target.value).then(updateSettings); else api.clearCustomFile('customThemePath').then(updateSettings); });
+      document.getElementById('soundSelect').addEventListener('change', event => { if (event.target.value) api.selectCustomFile('sound', event.target.value).then(updateSettings); else api.clearCustomFile('notificationSoundPath').then(updateSettings); });
       document.getElementById('refreshThemes').addEventListener('click', () => api.refreshCustomFiles().then(updateSettings));
       document.getElementById('refreshSounds').addEventListener('click', () => api.refreshCustomFiles().then(updateSettings));
       document.getElementById('openThemes').addEventListener('click', () => api.openCustomFolder('theme'));
